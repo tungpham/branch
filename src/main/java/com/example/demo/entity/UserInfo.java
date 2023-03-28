@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -19,5 +21,5 @@ public class UserInfo {
     private String url;
     private String location;
     private String email;
-    private String created_at;
+    private Instant created_at;
 }

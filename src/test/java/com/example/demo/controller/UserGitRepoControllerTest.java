@@ -7,7 +7,7 @@ import com.example.demo.service.GitService;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
-import java.util.concurrent.ExecutionException;
+import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -19,7 +19,7 @@ public class UserGitRepoControllerTest {
     UserGitController controller = new UserGitController(gitService);
 
     @Test
-    public void getUserRepo() throws ExecutionException, InterruptedException {
+    public void getUserRepo() {
         UserInfo userInfo = UserInfo.builder()
                 .url("url")
                 .name("name")
@@ -27,7 +27,7 @@ public class UserGitRepoControllerTest {
                 .email("email")
                 .avatar_url("avatar")
                 .location("location")
-                .created_at("created_at")
+                .created_at(Instant.now())
                 .build();
 
         UserRepo repo = UserRepo.builder()

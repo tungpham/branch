@@ -4,6 +4,8 @@ import com.example.demo.entity.UserInfo;
 import com.example.demo.entity.UserRepo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import okhttp3.HttpUrl;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -12,17 +14,19 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.codec.json.Jackson2JsonDecoder;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class GitServiceTest {
 
     static GitService gitService;
-    ObjectMapper objectMapper = new ObjectMapper();
+    static ObjectMapper objectMapper = new ObjectMapper();
 
     static MockWebServer mockWebServer;
 
@@ -32,7 +36,15 @@ public class GitServiceTest {
         mockWebServer.start();
 
         HttpUrl url = mockWebServer.url("/");
-        gitService = new GitService(WebClient.create(), url.url().toString());
+
+        objectMapper.registerModule(new JavaTimeModule());
+        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+        gitService = new GitService(WebClient.builder()
+                .codecs(configurer -> configurer
+                        .defaultCodecs()
+                        .jackson2JsonDecoder(new Jackson2JsonDecoder(objectMapper)))
+                .build(), url.url().toString());
     }
 
     @AfterAll
@@ -49,7 +61,7 @@ public class GitServiceTest {
                 .email("email")
                 .avatar_url("avatar")
                 .location("location")
-                .created_at("created_at")
+                .created_at(Instant.now())
                 .build();
         mockWebServer.enqueue(new MockResponse()
                 .setBody(objectMapper.writeValueAsString(expected))
