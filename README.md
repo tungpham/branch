@@ -16,26 +16,21 @@ each client should be done here.
 * `controller` - define all the REST APIs. The Controller should only have to worry about transform/serialize the 
 application model into the REST API contract. 
 * `entity` - representation of the response from dependencies, such as web services, database, etc.
-* `dto` - the model of this application. All business logic should operate on this model
-* `service` - business logic + dependencies access layer (web services, database, file storage, etc.). Traditionally, 
-this package contains only the business logic layer that operate on the application model. However, for this exercise,  
-it's a conscious decision to combine this package with the `dao` - "data access layer", or `sao` - "service access layer" 
-packages to keep it simple.
+* `dto` - the model of the service API - external facing client. 
+* `model` - the application internal model where all business logic should happen upon.
+* `sao` - low level dependencies access layer (database, or dao, web services, etc.) 
+* `service` - business logic of the application. 
 
 ### Architecture choice
-* Traditionally, we should have `external facing client model (dto)` - `application model (model)` - `dependencies 
+* We should have `external facing client model (dto)` - `application model (model)` - `dependencies 
 model (entity)` so that we are extensible in all directions. 
   1. Update API interface: only need to change the adapter between `dto` and `model`
   2. Dependency API got update: only need to change the adapter between `model` and `entity`
   3. Internal application refactoring won't impact the existing contract `dto` and `entity` 
 
-  The potential drawback is we can have a lot of "mapping" layers with seemingly redundant codes (thus, the like of 
+  Note: The potential drawback is we can have a lot of "mapping" layers with seemingly redundant codes (thus, the like of 
 [MapStruct](https://mapstruct.org/) was born, which we should never use), and as a result of this mapping activities, 
-it can be error-prone. Therefore, this principal should be applied on a case-by-case basis. For the purpose of this 
-exercise, it's a conscious decision to combine the `dto` and `model` into one since there isn't a lot of business logic 
-to be performed on model. When it's time for more complex interaction and business logic, this can always be refactored 
-with ease. 
-
+it can be error-prone. Therefore, this principal should be applied with care.
 
 * Model `timestamp` field such as created_at is unmarshalled to `java.time.Instant` to make it explicit clear on time 
 processing down the road (ie. save to database, compare, query on range, etc.) 

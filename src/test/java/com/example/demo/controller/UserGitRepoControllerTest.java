@@ -2,9 +2,9 @@ package com.example.demo.controller;
 
 import com.example.demo.dto.RepoDto;
 import com.example.demo.dto.UserGitRepoResponse;
-import com.example.demo.entity.UserInfo;
-import com.example.demo.entity.UserRepo;
-import com.example.demo.service.GitService;
+import com.example.demo.model.User;
+import com.example.demo.model.UserRepo;
+import com.example.demo.service.UserGitService;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +12,7 @@ import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
 import java.time.Instant;
@@ -24,7 +25,7 @@ import static org.mockito.Mockito.when;
 public class UserGitRepoControllerTest {
 
     @MockBean
-    private GitService gitService;
+    private UserGitService userGitService;
 
     @Autowired
     private WebTestClient webTestClient;
@@ -32,23 +33,21 @@ public class UserGitRepoControllerTest {
     @Test
     public void getUserRepo() {
         Instant createdAt = Instant.now();
-        UserInfo userInfoEntity = UserInfo.builder()
+        User user = User.builder()
+                .userName("userId")
+                .displayName("name")
                 .url("url")
-                .name("name")
-                .login("userId")
                 .email("email")
-                .avatar_url("avatar")
-                .location("location")
-                .created_at(createdAt)
+                .avatar("avatar")
+                .geoLocation("location")
+                .createdAt(createdAt)
+                .repos(List.of(UserRepo.builder()
+                        .url("url")
+                        .name("name")
+                        .build()))
                 .build();
 
-        UserRepo repo = UserRepo.builder()
-                .html_url("url")
-                .name("name")
-                .build();
-
-        when(gitService.getUserInfoAsync("userId")).thenReturn(Mono.just(userInfoEntity));
-        when(gitService.getUserReposAsync("userId")).thenReturn(Mono.just(new UserRepo[] {repo}));
+        when(userGitService.getUser("userId")).thenReturn(Mono.just(user));
 
         webTestClient.get()
                 .uri("/usergit/userId")
@@ -76,5 +75,15 @@ public class UserGitRepoControllerTest {
                 .exchange()
                 .expectStatus()
                 .is4xxClientError();
+    }
+
+    @Test
+    public void whenDependencyReturnExceptionReturn500() {
+        when(userGitService.getUser("userId")).thenThrow(WebClientResponseException.class);
+        webTestClient.get()
+                .uri("/usergit/user")
+                .exchange()
+                .expectStatus()
+                .is5xxServerError();
     }
 }

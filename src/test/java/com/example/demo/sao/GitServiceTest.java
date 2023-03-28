@@ -1,7 +1,7 @@
-package com.example.demo.service;
+package com.example.demo.sao;
 
-import com.example.demo.entity.UserInfo;
-import com.example.demo.entity.UserRepo;
+import com.example.demo.entity.UserInfoEntity;
+import com.example.demo.entity.UserRepoEntity;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -54,7 +54,7 @@ public class GitServiceTest {
 
     @Test
     public void getUserInfo() throws JsonProcessingException {
-        UserInfo expected = UserInfo.builder()
+        UserInfoEntity expected = UserInfoEntity.builder()
                 .url("url")
                 .name("name")
                 .login("userId")
@@ -68,24 +68,24 @@ public class GitServiceTest {
                 .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
         );
 
-        Mono<UserInfo> userInfo = gitService.getUserInfoAsync("userId");
+        Mono<UserInfoEntity> userInfo = gitService.getUserInfoAsync("userId");
 
         assertEquals(expected, userInfo.block());
     }
 
     @Test
     public void getUserRepo() throws JsonProcessingException {
-        UserRepo repo = UserRepo.builder()
+        UserRepoEntity repo = UserRepoEntity.builder()
                 .html_url("url")
                 .name("name")
                 .build();
 
         mockWebServer.enqueue(new MockResponse()
-                .setBody(objectMapper.writeValueAsString(new UserRepo[] {repo}))
+                .setBody(objectMapper.writeValueAsString(new UserRepoEntity[] {repo}))
                 .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
         );
 
-        Mono<UserRepo[]> userRepos = gitService.getUserReposAsync("userId");
+        Mono<UserRepoEntity[]> userRepos = gitService.getUserReposAsync("userId");
 
         assertEquals(repo, userRepos.block()[0]);
     }
