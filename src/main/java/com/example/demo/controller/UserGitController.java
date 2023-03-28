@@ -26,7 +26,12 @@ public class UserGitController {
         this.gitService = gitService;
     }
 
-    @GetMapping("/usergit/{user_id}")
+    /**
+     * Get userInfo and user repos.
+     * @param userId - validated to make sure only a-zA-Z0-9. Anything else will be rejected with 404 right away
+     * @return
+     */
+    @GetMapping("/usergit/{user_id:[a-zA-Z0-9]*}")
     public Mono<UserGitRepoResponse> getUserGitRepo(@PathVariable(value = "user_id") String userId) {
 
         //Calling userInfo and userRepo in parallel
