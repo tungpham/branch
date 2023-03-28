@@ -1,33 +1,45 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.RepoDto;
 import com.example.demo.dto.UserGitRepoResponse;
 import com.example.demo.entity.UserInfo;
 import com.example.demo.entity.UserRepo;
 import com.example.demo.service.GitService;
 import org.junit.jupiter.api.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
 
 import java.time.Instant;
+import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@RunWith(SpringRunner.class)
+@WebFluxTest(UserGitController.class)
 public class UserGitRepoControllerTest {
 
-    GitService gitService = mock(GitService.class);
-    UserGitController controller = new UserGitController(gitService);
+    @MockBean
+    private GitService gitService;
+
+    @Autowired
+    private WebTestClient webTestClient;
 
     @Test
     public void getUserRepo() {
-        UserInfo userInfo = UserInfo.builder()
+        Instant createdAt = Instant.now();
+        UserInfo userInfoEntity = UserInfo.builder()
                 .url("url")
                 .name("name")
                 .login("userId")
                 .email("email")
                 .avatar_url("avatar")
                 .location("location")
-                .created_at(Instant.now())
+                .created_at(createdAt)
                 .build();
 
         UserRepo repo = UserRepo.builder()
@@ -35,21 +47,34 @@ public class UserGitRepoControllerTest {
                 .name("name")
                 .build();
 
-        when(gitService.getUserInfoAsync("userId")).thenReturn(Mono.just(userInfo));
+        when(gitService.getUserInfoAsync("userId")).thenReturn(Mono.just(userInfoEntity));
         when(gitService.getUserReposAsync("userId")).thenReturn(Mono.just(new UserRepo[] {repo}));
 
-        Mono<UserGitRepoResponse> mResponse = controller.getUserGitRepo("userId");
-        UserGitRepoResponse response = mResponse.block();
+        webTestClient.get()
+                .uri("/usergit/userId")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(UserGitRepoResponse.class).isEqualTo(UserGitRepoResponse.builder()
+                        .user_name("userId")
+                        .display_name("name")
+                        .avatar("avatar")
+                        .geo_location("location")
+                        .url("url")
+                        .email("email")
+                        .created_at(createdAt)
+                        .repos(List.of(RepoDto.builder()
+                                .url("url")
+                                .name("name")
+                                .build()))
+                        .build());
+    }
 
-        assertEquals(userInfo.getLogin(), response.getUser_name());
-        assertEquals(userInfo.getName(), response.getDisplay_name());
-        assertEquals(userInfo.getUrl(), response.getUrl());
-        assertEquals(userInfo.getAvatar_url(), response.getAvatar());
-        assertEquals(userInfo.getLocation(), response.getGeo_location());
-        assertEquals(userInfo.getEmail(), response.getEmail());
-        assertEquals(userInfo.getCreated_at(), response.getCreated_at());
-
-        assertEquals(repo.getName(), response.getRepos().get(0).getName());
-        assertEquals(repo.getHtml_url(), response.getRepos().get(0).getUrl());
+    @Test
+    public void validateInvalidUserIdtest() {
+        webTestClient.get()
+                .uri("/usergit/user!")
+                .exchange()
+                .expectStatus()
+                .is4xxClientError();
     }
 }
