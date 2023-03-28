@@ -13,12 +13,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.io.IOException;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GitServiceTest {
 
@@ -57,9 +56,9 @@ public class GitServiceTest {
                 .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
         );
 
-        UserInfo userInfo = gitService.getUserInfo("userId");
+        Mono<UserInfo> userInfo = gitService.getUserInfoAsync("userId");
 
-        assertEquals(expected, userInfo);
+        assertEquals(expected, userInfo.block());
     }
 
     @Test
@@ -68,28 +67,14 @@ public class GitServiceTest {
                 .html_url("url")
                 .name("name")
                 .build();
-        List<UserRepo> expected = List.of(repo);
 
         mockWebServer.enqueue(new MockResponse()
                 .setBody(objectMapper.writeValueAsString(new UserRepo[] {repo}))
                 .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
         );
 
-        List<UserRepo> userRepos = gitService.getUserRepos("userId");
+        Mono<UserRepo[]> userRepos = gitService.getUserReposAsync("userId");
 
-        assertEquals(expected, userRepos);
-    }
-
-    @Test
-    public void getUserRepoReturnEmptyListOnNull() throws JsonProcessingException {
-
-        mockWebServer.enqueue(new MockResponse()
-                .setBody(objectMapper.writeValueAsString(null))
-                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-        );
-
-        List<UserRepo> userRepos = gitService.getUserRepos("userId");
-
-        assertTrue(userRepos.isEmpty());
+        assertEquals(repo, userRepos.block()[0]);
     }
 }
